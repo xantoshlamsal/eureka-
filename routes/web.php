@@ -25,6 +25,7 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
 
 Route::middleware(['auth:sanctum', 'verified'])->group(function(){
 Route::get('currency', [CurrencyController::class, 'create']);
+Route::get('currency-list', [CurrencyController::class, 'index']);
 Route::post('currency', [CurrencyController::class, 'store']);
 Route::get('currency/gl-map', [CurrencyController::class, 'glmap']);
 Route::post('currency-gls', [CurrencyController::class, 'getGlsFromCurrency']);
@@ -32,5 +33,6 @@ Route::post('currency-gls', [CurrencyController::class, 'getGlsFromCurrency']);
 Route::get('gl', [GlController::class, 'index']);
 Route::post('gl', [GlController::class, 'store']);
 
+Route::get('test', [CurrencyController::class, 'test']);
 });
 

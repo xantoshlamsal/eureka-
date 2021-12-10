@@ -188,6 +188,9 @@
                         <a href="{{url('currency')}}">Currency Setup</a>
                     </li>
                     <li>
+                        <a href="{{url('currency-list')}}">Currency List</a>
+                    </li>
+                    <li>
                         <a href="{{url('currency/gl-map')}}">Currency GL Map</a>
                     </li>
                 </ul>

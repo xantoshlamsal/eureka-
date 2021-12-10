@@ -49,4 +49,15 @@ class HelpFunctionsController extends Controller
         $username=User::select(['name'])->where('id',$id)->first();
         return $username['name'];
     }
+
+    public static function getTransactionOptionTerm($code){
+            $tranTypes=[
+              0=>'None',
+              1=>'Both',
+              2=>'Buying Only',
+              3=>'Selling Only'
+            ];
+
+            return $tranTypes[$code];
+    }
 }

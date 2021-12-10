@@ -18,8 +18,7 @@ class CurrencyController extends Controller
      */
     public function index()
     {
-
-
+        return view('currency.index')->with(['currencies' => Currency::all()]);
     }
 
     public function searchCurrency($q)
@@ -54,7 +53,37 @@ class CurrencyController extends Controller
         ]);
 
 
-//        return $requestValues;
+//        $gls = [];
+//        foreach (DB::table('currency_tran_type')->get() as $tr) {
+//            $d2 = DB::table('currency_gl_detail')
+//                ->where('TranTypeId', '=', $tr->id)
+////                ->leftJoin('currency_gl_master', function ($join) {
+////                    $join->on('currency_gl_master.CurrencyId','=','currency_gl_detail.CurrencyGlMasterId');
+////                })
+//                ->select('id', 'CurrencyGLMasterId', 'GlId', 'TranTypeId')
+//                ->get();
+//            $gls[$tr->TranTypeName] = $d2;
+//        }
+//
+//        return $gls;
+//
+//        foreach ($gls as $gl){
+//
+//        }
+
+
+        $effect_dates = DB::table('currency_gl_master')
+            ->where('currencyId', $request['CurrencyId'])
+            ->select(['id', 'EffectDate'])
+            ->get();
+
+        foreach ($effect_dates as $e) {
+            $details = DB::table('currency_gl_detail')
+                ->where('CurrencyGlMasterId', '=', $e->id)
+                ->select(['id', 'GlId', 'TranTypeId'])
+                ->get();
+        }
+
 
         $d1 = DB::table('currency_gl_master')
             ->where('CurrencyId', $request['CurrencyId'])
@@ -63,8 +92,10 @@ class CurrencyController extends Controller
             ->select('id')
             ->first();
 
+//        return $d1;
+
         $d2 = DB::table('currency_gl_detail')
-            ->where('CurrencyGLMasterId', $d1->id??0)
+            ->where('CurrencyGLMasterId', $d1->id ?? 0)
             ->join('gl', 'currency_gl_detail.GlId', '=', 'gl.Id')
             ->join('currency_tran_type', 'currency_gl_detail.TranTypeId', '=', 'currency_tran_type.Id')
             ->get();
@@ -91,16 +122,17 @@ class CurrencyController extends Controller
 //            "currency" => $currency,
 //            "gls" => $d2
 //        ];
-        $tranTypes = DB::table('currency_tran_type')
-            ->orderBy('DispOrder')
-            ->get();
+
 //        return $tranTypes;
-        return view('currency.currencyGLMap')->with(['currencies' => Currency::all(),
-            'tranTypes' => $tranTypes,
-            'gls' => $d2,
-            'currency' => $currency,
-            'request_values' => $requestValues
-        ]);
+        return view('currency.currencyGLMap')->with(
+//        return
+            ['currencies' => Currency::all(),
+                'tranTypes' => DB::table('currency_tran_type')->get(),
+                'gls' => $d2,
+                'currency' => $currency,
+                'request_values' => $requestValues,
+                'effect_dates' => $effect_dates
+            ]);
 //        return redirect()->back()->with(['gls'=>$gls, 'old_values'=>$requestValues]);
 
     }
@@ -159,11 +191,22 @@ class CurrencyController extends Controller
 
         $this->saveCurrencyEffectDate($currency->id, $data);
 
-        return [
-            "status" => "success",
-            "message" => "Currency Created Successfully and Effect Date entry done successfully",
-            "object" => $currency
-        ];
+        return view('currency.index')->with(['currencies' => Currency::all()]);
+
+//        return redirect()->back()->with('Currency Created Successfully and Effect Date entry done successfully');
+    }
+
+    public function test()
+    {
+        return DB::table('currency_gl_master')->insertGetId([
+            'CurrencyId' => 1,
+            'EffectDate' => date('Y-m-d'),
+            'TranDate' => Carbon::now(),
+            'TranUserId' => Auth::id(),
+            'Status' => 1,
+            'StatusChangeUserId' => Auth::id(),
+            'StatusChangeDate' => Carbon::now(),
+        ]);
     }
 
     public function saveCurrencyEffectDate($currencyId, $mandatoryFields = [])

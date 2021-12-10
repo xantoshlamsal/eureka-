@@ -10,7 +10,7 @@
                 <div class="form-row">
                     <div class="form-group input-group-sm col-sm-4">
                         <label>Effect Date</label>
-                        <input type="date" name="EffectDate" class="form-control"
+                        <input type="date" id="calendar-effect-date" name="EffectDate" class="form-control"
                                value="{{$request_values['EffectDate']??old('EffectDate')??date('Y-m-d')}}" required>
                     </div>
 
@@ -38,6 +38,19 @@
                     </div>
                 </div>
             </form>
+
+        </div>
+        <div class="card-footer">
+            @if(isset($effect_dates))
+                This currency has {{count($effect_dates??[])}} effect dates.
+                <br>
+                <ul id="ul-effect-date" class="list-inline">
+                    @foreach($effect_dates as $e)
+                        <li id="text-effect-date" class="list-inline-item p-1"
+                            style="background: #abb3ba; text-decoration-color: #ffffff"> {{date("Y-m-d", strtotime($e->EffectDate))}}</li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
     </div>
     <div class="card mt-4">
@@ -45,12 +58,8 @@
             List of GL
         </div>
         <div class="card-body">
-            {{--            @foreach($gls as $g)--}}
-            {{--                <p>{{$g->GlId}}</p>--}}
-            {{--            @endforeach--}}
-
-            @if(isset($request_values))
-                <table class="table table-sm text-xs">
+                @if(isset($request_values))
+                <table class="table table-sm text-xs table-hover">
                     <thead>
                     <th>Tran Types</th>
                     <th>GL Code</th>
@@ -63,8 +72,7 @@
                         <tr>
                             <td>{{$t->TranTypeCode}} - {{$t->TranTypeName}}</td>
                             @foreach($gls as $g)
-                                <input type="hidden" id="hidden_currency_gl_master_id"
-                                       value="{{$g->CurrencyGLMasterId}}">
+
                                 @if($t->id==$g->TranTypeId)
                                     <?php $col_flag++; ?>
                                     <td>{{$g->GlCode}}</td>
@@ -151,11 +159,12 @@
     </div>
     <script>
         $(document).ready(function () {
-
             var currency_id = 0;
-            var currency_master_id = 0;
+            var currency_master_id;
             var gl_id = 0;
             var tran_type_id = 0;
+            var user_id={!! json_encode(\Illuminate\Support\Facades\Auth::id()) !!};
+
 
             $(document).on("click", "#btn_tran_type_gl", function () {
                 var $row = $(this).closest('tr');
@@ -171,6 +180,10 @@
                 console.log("GL: " + gl_id);
                 console.log("Currency: " + currency_id);
                 console.log("TranType: " + tran_type_id);
+                console.log("Currency_Master: " + currency_master_id);
+                console.log("user_id: " + user_id);
+                console.log("Effect Date: " + $('#calendar-effect-date').val());
+
 
                 $.ajax({
                     type: "POST",
@@ -180,25 +193,30 @@
                         "currency_id": currency_id,
                         "gl_id": gl_id,
                         "tran_type_id": tran_type_id,
-                        "currency_master_id":currency_master_id
+                        "currency_master_id": currency_master_id,
+                        "effect_date":$('#calendar-effect-date').val(),
+                        "user_id":user_id
                     },
                     success: function (data) {
                         console.log("Return from server");
                         console.log(data);
-                        if(data['success']){
+                        if (data['success']) {
+                            console.log(data);
                             alert(data['message']);
                             location.reload();
-                        }else {
-                            var message="";
-                            $.each(data['message'], function(index, value) {
+                        } else {
+                            var message = "";
+                            $.each(data['message'], function (index, value) {
                                 console.log(value);
-                                message=message+"\n" + value;
+                                message = message + "\n" + value;
                             });
                             alert(message);
                         }
-
-
                     },
+                    error:function (error){
+                        console.log(error)
+                    }
+
                 });
 
                 // console.log($(gl_id).val());
@@ -312,6 +330,27 @@
                     }
                 });
             });
+
+            $('#ul-effect-date li').click(function () {
+                var date = new Date($(this).text().replace(/(\d{2})-(\d{2})-(\d{4})/, "$2/$1/$3"))
+                $('#calendar-effect-date').val(formatDate(date));
+                $('#calendar-effect-date').focus();
+            });
+
+            function formatDate(date) {
+                var d = new Date(date),
+                    month = '' + (d.getMonth() + 1),
+                    day = '' + d.getDate(),
+                    year = d.getFullYear();
+
+                if (month.length < 2)
+                    month = '0' + month;
+                if (day.length < 2)
+                    day = '0' + day;
+
+                return [year, month, day].join('-');
+            }
+
         });
     </script>
 @endsection
