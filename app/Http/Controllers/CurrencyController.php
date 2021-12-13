@@ -196,18 +196,18 @@ class CurrencyController extends Controller
 //        return redirect()->back()->with('Currency Created Successfully and Effect Date entry done successfully');
     }
 
-    public function test()
-    {
-        return DB::table('currency_gl_master')->insertGetId([
-            'CurrencyId' => 1,
-            'EffectDate' => date('Y-m-d'),
-            'TranDate' => Carbon::now(),
-            'TranUserId' => Auth::id(),
-            'Status' => 1,
-            'StatusChangeUserId' => Auth::id(),
-            'StatusChangeDate' => Carbon::now(),
-        ]);
-    }
+//    public function test()
+//    {
+//        return DB::table('currency_gl_master')->insertGetId([
+//            'CurrencyId' => 1,
+//            'EffectDate' => date('Y-m-d'),
+//            'TranDate' => Carbon::now(),
+//            'TranUserId' => Auth::id(),
+//            'Status' => 1,
+//            'StatusChangeUserId' => Auth::id(),
+//            'StatusChangeDate' => Carbon::now(),
+//        ]);
+//    }
 
     public function saveCurrencyEffectDate($currencyId, $mandatoryFields = [])
     {

@@ -58,7 +58,7 @@
             List of GL
         </div>
         <div class="card-body">
-                @if(isset($request_values))
+            @if(isset($request_values))
                 <table class="table table-sm text-xs table-hover">
                     <thead>
                     <th>Tran Types</th>
@@ -72,7 +72,6 @@
                         <tr>
                             <td>{{$t->TranTypeCode}} - {{$t->TranTypeName}}</td>
                             @foreach($gls as $g)
-
                                 @if($t->id==$g->TranTypeId)
                                     <?php $col_flag++; ?>
                                     <td>{{$g->GlCode}}</td>
@@ -85,6 +84,8 @@
                             @endif
                             <td>
                                 <input type="hidden" id="hidden_tran_type_id" value="{{$t->id}}">
+                                {{--                                <input type="hidden" id="hidden_already_mapped" value="{{$t->id}}">--}}
+                                <input type="hidden" id="hidden_already_mapped" value="{{($col_flag==0)?0:1}}">
                                 <button id="btn_tran_type_gl" type="button" class="btn-xs btn-warning"
                                         data-toggle="modal"
                                         data-target="#exampleModal">
@@ -116,6 +117,10 @@
                 </div>
                 <div class="modal-body">
                     {{--                    <form action="{{url('currency-gls')}}" method="post">--}}
+                    <div class="form-row mb-4">
+                        <label>Effect Date</label>
+                        <input type="date" id="new_effect_date" class="form-control input-sm" value="{{date('Y-m-d')}}">
+                    </div>
                     <div class="form-row">
                         <div class="form-group input-group-sm  col-sm-3">
                             <label>GL Code</label>
@@ -163,64 +168,83 @@
             var currency_master_id;
             var gl_id = 0;
             var tran_type_id = 0;
-            var user_id={!! json_encode(\Illuminate\Support\Facades\Auth::id()) !!};
+            var user_id = {!! json_encode(\Illuminate\Support\Facades\Auth::id()) !!};
+            var already_mapped;
+            var effect_date_new;
+            var effect_date;
 
 
             $(document).on("click", "#btn_tran_type_gl", function () {
                 var $row = $(this).closest('tr');
                 tran_type_id = $row.find('#hidden_tran_type_id').val();
-                currency_master_id = $row.find('#hidden_currency_gl_master_id').val();
+                already_mapped = $row.find('#hidden_already_mapped').val();
+                effect_date=$('#calendar-effect-date').val();
+                // currency_master_id = $row.find('#hidden_currency_gl_master_id').val();
                 console.log("currency_master" + currency_master_id);
+                if (already_mapped == 1) {
+                    $('#new_effect_date').closest('label').append(`This Transaction type
+                    has already mapped to a gl. Enter new Effect Date to map to another GL`);
+                    $('#new_effect_date').prop("disabled", false);
+                } else {
+                    $('#new_effect_date').prop("disabled", true);
+                }
+            });
+
+            $(document).on("change", "#new_effect_date", function (){
+               effect_date_new=$(this).val();
+               console.log(effect_date_new);
             });
 
             $(document).on("click", "#modal_select_gl_btn", function (event) {
-                var $row = $(this).closest('tr');
+                const $row = $(this).closest('tr');
                 gl_id = $row.find('#hidden_gl_id').val();
+                // let is_mapped = $(this).siblings('#hidden_already_mapped').val();
+                effect_date_new=$('#new_effect_date').val();
+
                 currency_id = $('#currency_name').val();
                 console.log("GL: " + gl_id);
                 console.log("Currency: " + currency_id);
                 console.log("TranType: " + tran_type_id);
                 console.log("Currency_Master: " + currency_master_id);
                 console.log("user_id: " + user_id);
-                console.log("Effect Date: " + $('#calendar-effect-date').val());
+                console.log("Effect Date: " + effect_date);
+                console.log("Effect Date New: " + effect_date_new);
+                console.log("Already Mapped: " + already_mapped);
 
-
-                $.ajax({
-                    type: "POST",
-                    dataType: "json",
-                    url: "api/currency-map-gl",
-                    data: {
-                        "currency_id": currency_id,
-                        "gl_id": gl_id,
-                        "tran_type_id": tran_type_id,
-                        "currency_master_id": currency_master_id,
-                        "effect_date":$('#calendar-effect-date').val(),
-                        "user_id":user_id
-                    },
-                    success: function (data) {
-                        console.log("Return from server");
-                        console.log(data);
-                        if (data['success']) {
+                    $.ajax({
+                        type: "POST",
+                        dataType: "json",
+                        url: "api/currency-map-gl",
+                        data: {
+                            "currency_id": currency_id,
+                            "gl_id": gl_id,
+                            "tran_type_id": tran_type_id,
+                            "currency_master_id": currency_master_id,
+                            "effect_date_new": effect_date_new,
+                            "effect_date":effect_date,
+                            "user_id": user_id,
+                            "already_mapped": already_mapped
+                        },
+                        success: function (data) {
+                            console.log("Return from server");
                             console.log(data);
-                            alert(data['message']);
-                            location.reload();
-                        } else {
-                            var message = "";
-                            $.each(data['message'], function (index, value) {
-                                console.log(value);
-                                message = message + "\n" + value;
-                            });
-                            alert(message);
+                            if (data['success']) {
+                                console.log(data);
+                                alert(data['message']);
+                                location.reload();
+                            } else {
+                                var message = "";
+                                $.each(data['message'], function (index, value) {
+                                    console.log(value);
+                                    message = message + "\n" + value;
+                                });
+                                    alert(message);
+                            }
+                        },
+                        error: function (error) {
+                            console.log(error)
                         }
-                    },
-                    error:function (error){
-                        console.log(error)
-                    }
-
-                });
-
-                // console.log($(gl_id).val());
-                // console.log("GO GL ID: " + $(event.target).closest('#hidden_gl_id').text());
+                    });
             });
 
             $("#currency_name").select2({
@@ -271,6 +295,7 @@
                     }
                 });
             });
+
             $('#currency_name').on('select2:select', function (e) {
                 // let currency;
                 // console.log($('#currency_name').val());

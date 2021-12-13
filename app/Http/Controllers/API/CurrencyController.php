@@ -66,23 +66,45 @@ class CurrencyController extends Controller
             'gl_id' => 'required|unique:currency_gl_detail,GlId',
             'currency_id' => 'required',
             'tran_type_id' => 'required',
-            'effect_date'=>'required',
-            'user_id'=>'required'
+            'effect_date' => 'required',
+            'effect_date_new' => 'required',
+            'user_id' => 'required',
+            'already_mapped' => 'required'
 //            'currency_master_id' => 'required'
         ]);
 
+
         $effect_date = DB::table('currency_gl_master')
             ->where('CurrencyId', $request['currency_id'])
-            ->where('EffectDate','=', $request['effect_date'])
-            ->select(['id','EffectDate'])
+            ->where('EffectDate', '=', $request['effect_date'])
+            ->select(['id', 'EffectDate'])
             ->first();
 
-        $currency_master_id=0;
 
-        if($effect_date!=null){
-            $currency_master_id=$effect_date->id;
-        }else{
-            $currency_master_id=$this->saveCurrencyEffectDate($request['currency_id'], $request['effect_date'], $request['user_id']);
+        $currency_master_id = 0;
+
+
+//        return $request;
+        if ($request['already_mapped'] == "0") {
+            if ($effect_date != null)
+                $currency_master_id = $effect_date->id;
+            else
+                $currency_master_id = $this->saveCurrencyEffectDate($request['currency_id'], $request['effect_date'], $request['user_id']);
+        } else {
+            if ($request['effect_date'] == $request['effect_date_new']) {
+                return [
+                    "success"=>false,
+                    "message"=>["Select Different Effect Date."]
+                ];
+            } else{
+                if($validator->fails()){
+                    $response['success']=false;
+                    $response['message'] = $validator->messages();
+                    return $response;
+                }
+                $currency_master_id = $this->saveCurrencyEffectDate($request['currency_id'], $request['effect_date_new'], $request['user_id']);
+            }
+
         }
 
         if ($validator->fails()) {
@@ -113,19 +135,20 @@ class CurrencyController extends Controller
         return $response;
     }
 
-    public function saveCurrencyEffectDate($currencyId, $effectDate, $user_id)
+    public function saveCurrencyEffectDate($currencyId, $effectDate, $user_id): int
     {
         return DB::table('currency_gl_master')->insertGetId([
-             'CurrencyId' => $currencyId,
-             'EffectDate' => $effectDate,
-             'TranDate' => Carbon::now(),
-             'TranUserId' =>$user_id,
-             'Status' => 1,
-             'StatusChangeUserId' => $user_id,
-             'StatusChangeDate' => Carbon::now(),
-         ]);
+            'CurrencyId' => $currencyId,
+            'EffectDate' => $effectDate,
+            'TranDate' => Carbon::now(),
+            'TranUserId' => $user_id,
+            'Status' => 1,
+            'StatusChangeUserId' => $user_id,
+            'StatusChangeDate' => Carbon::now(),
+        ]);
 
     }
+
     /**
      * Show the form for creating a new resource.
      *
